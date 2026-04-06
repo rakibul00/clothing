@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InventoryPro | SaaS Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #0B1120; font-family: 'Inter', sans-serif; color: #F8FAFC; }
+        .glass-card { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.05); }
+        .sidebar-active { background: linear-gradient(90deg, rgba(79, 70, 229, 0.2) 0%, rgba(79, 70, 229, 0) 100%); border-left: 4px solid #6366F1; }
+    </style>
+</head>
+<body class="flex h-screen">
+
+    <aside class="w-72 bg-[#0F172A] border-r border-slate-800 flex flex-col p-6 hidden lg:flex">
+        <div class="flex items-center gap-3 mb-10 px-2">
+            <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center"><i class="fas fa-box"></i></div>
+            <h1 class="text-xl font-bold tracking-tight">InventoryPro</h1>
+        </div>
+        
+        
+       {% include 'sidebar.html' %}
+
+
+       
+    </aside>
+
+    <main class="flex-1 overflow-y-auto p-8 relative">
+        <header class="flex justify-between items-center mb-10">
+            <div>
+                <h2 class="text-2xl font-bold">Dashboard</h2>
+                <p class="text-slate-400 text-sm">Welcome back! Here's your shop performance today.</p>
+            </div>
+            <div class="flex items-center gap-6">
+                <div class="relative hidden md:block">
+                    <i class="fas fa-search absolute left-4 top-3 text-slate-500"></i>
+                    <input type="text" placeholder="Search anything..." class="bg-slate-800/50 border border-slate-700 rounded-xl py-2 pl-12 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-64">
+                </div>
+                <button class="bg-indigo-600/10 text-indigo-400 border border-indigo-500/20 px-4 py-2 rounded-xl text-sm font-semibold hover:bg-indigo-600 hover:text-white transition">
+                    <i class="fas fa-exchange-alt mr-2"></i> Switch to Manager
+                </button>
+            </div>
+        </header>
+
+       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+    <div class="p-6 rounded-3xl bg-gradient-to-br from-emerald-500/20 to-emerald-900/40 border border-emerald-500/20">
+        <p class="text-slate-400 text-xs uppercase tracking-widest font-bold">Total Revenue</p>
+        <h3 class="text-3xl font-black mt-1">৳{{ revenue|floatformat:0 }}</h3>
+    </div>
+
+    <div class="p-6 rounded-3xl bg-gradient-to-br from-indigo-500/20 to-indigo-900/40 border border-indigo-500/20">
+        <p class="text-slate-400 text-xs uppercase tracking-widest font-bold">Total Sales</p>
+        <h3 class="text-3xl font-black mt-1">{{ sales_count }}</h3>
+    </div>
+
+    <div class="p-6 rounded-3xl bg-gradient-to-br from-orange-500/20 to-orange-900/40 border border-orange-500/20">
+        <p class="text-slate-400 text-xs uppercase tracking-widest font-bold">Products</p>
+        <h3 class="text-3xl font-black mt-1">{{ products_count }}</h3>
+    </div>
+
+    <div class="p-6 rounded-3xl bg-gradient-to-br from-rose-500/20 to-rose-900/40 border border-rose-500/20">
+        <p class="text-slate-400 text-xs uppercase tracking-widest font-bold">Returns</p>
+        <h3 class="text-3xl font-black mt-1">{{ returns_count }}</h3>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-10">
+    <div class="lg:col-span-2 glass-card p-8 rounded-3xl shadow-xl">
+        <h4 class="text-lg font-bold mb-8">Sales Overview</h4>
+        <canvas id="salesChart" height="120"></canvas>
+    </div>
+
+    <div class="glass-card p-8 rounded-3xl shadow-xl">
+        <h4 class="text-lg font-bold mb-6">Top Products</h4>
+        <div class="space-y-6">
+            {% for product in top_products %}
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-slate-800 rounded-xl flex items-center justify-center"><i class="fas fa-tshirt text-indigo-400"></i></div>
+                <div class="flex-1">
+                    <p class="text-sm font-bold">{{ product.name }}</p>
+                    <p class="text-xs text-slate-500">{{ product.category.name|default:"General" }}</p>
+                </div>
+                <p class="text-sm font-bold text-emerald-400">৳{{ product.price }}</p>
+            </div>
+            {% empty %}
+            <p class="text-slate-500 text-sm italic">No products added yet.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+
+
+
+
+<script>
+function submitSale() {
+    if (cart.length === 0) return Swal.fire('Error', 'Cart is empty!', 'error');
+
+    // Grand total calculation logic (previously defined)
+    let subtotal = cart.reduce((s, i) => s + (i.price * i.qty), 0);
+    let finalTotal = subtotal - (subtotal * (parseFloat(document.getElementById('discount-input').value) || 0) / 100);
+
+    const formData = new FormData();
+    formData.append('customer_name', document.getElementById('cust-name').value);
+    formData.append('customer_phone', document.getElementById('cust-phone').value);
+    formData.append('payment_method', document.getElementById('selected-payment').value);
+    formData.append('total_amount', finalTotal);
+    formData.append('items', JSON.stringify(cart));
+    formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+    fetch("{% url 'complete_sale' %}", {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            Swal.fire({
+                title: 'Complete Sell!',
+                text: 'Transaction recorded successfully.',
+                icon: 'success',
+                confirmButtonText: 'OK'
+            }).then(() => {
+                location.reload(); // Page reload hobe dashboard update korar jonno
+            });
+        }
+    });
+}
+</script>
+    </main>
+
+    <script>
+        const ctx = document.getElementById('salesChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr'],
+                datasets: [{
+                    label: 'Sales (৳)',
+                    data: [180000, 220000, 310000, 280000, 200000, 350000, 300000],
+                    borderColor: '#6366F1',
+                    borderWidth: 4,
+                    pointBackgroundColor: '#6366F1',
+                    pointRadius: 6,
+                    tension: 0.4,
+                    fill: true,
+                    backgroundColor: 'rgba(99, 102, 241, 0.1)'
+                }]
+            },
+            options: {
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748B' } },
+                    x: { grid: { display: false }, ticks: { color: '#64748B' } }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

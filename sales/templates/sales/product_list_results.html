@@ -1,0 +1,19 @@
+{% for product in products %}
+<div class="glass-card p-4 hover:border-indigo-500 transition-all cursor-pointer group" 
+     onclick="addToCart({{ product.id }}, '{{ product.name }}', '{{ product.price }}')">
+    <div class="h-28 bg-slate-800 rounded-lg mb-3 overflow-hidden">
+        {% if product.image %}
+            <img src="{{ product.image.url }}" class="w-full h-full object-cover group-hover:scale-110 transition-transform">
+        {% else %}
+            <div class="flex items-center justify-center h-full"><i class="fas fa-image text-slate-700"></i></div>
+        {% endif %}
+    </div>
+    <h3 class="font-bold text-xs truncate">{{ product.name }}</h3>
+    <div class="flex justify-between items-center mt-2">
+        <span class="text-[10px] text-slate-500 font-mono">#{{ product.code }}</span>
+        <span class="text-indigo-400 text-xs font-bold">৳{{ product.price }}</span>
+    </div>
+</div>
+{% empty %}
+<p class="col-span-full text-center text-slate-500 py-10">No products found.</p>
+{% endfor %}

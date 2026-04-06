@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sales / POS | InventoryPro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
+    <style>
+        body { background-color: #0b1120; color: #f8fafc; font-family: "Inter", sans-serif; }
+        .glass-card { background: #111827; border: 1px solid #1f2937; border-radius: 1.2rem; }
+        .input-dark { background: #1f2937; border: 1px solid #374151; color: white; padding: 0.6rem 1rem; border-radius: 0.75rem; outline: none; width: 100%; transition: 0.3s; }
+        .payment-btn { background: #1f2937; border: 2px solid transparent; transition: 0.3s; cursor: pointer; }
+        .payment-active { border-color: #6366f1; background: rgba(99, 102, 241, 0.1); }
+        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #1f2937; border-radius: 10px; }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden">
+
+    <aside class="w-64 bg-[#0F172A] border-r border-slate-800 p-6 hidden lg:flex flex-col">
+        <h1 class="text-xl font-black text-indigo-500 mb-10 italic">InventoryPro</h1>
+        {% include 'sidebar.html' %}
+    </aside>
+
+    <main class="flex-1 flex flex-col h-full overflow-hidden">
+        <header class="p-4 border-b border-slate-800 flex justify-between items-center bg-[#0b1120]">
+            <h2 class="text-lg font-bold">POS Terminal</h2>
+            <p class="text-slate-500 text-xs" id="date-display"></p>
+        </header>
+
+        <div class="flex-1 overflow-y-auto p-6 custom-scrollbar">
+            <div class="grid grid-cols-12 gap-6">
+                
+                <div class="col-span-12 lg:col-span-7 space-y-6">
+                    <div class="glass-card p-6">
+                        <div class="relative">
+                            <i class="fas fa-search absolute left-4 top-4 text-slate-500"></i>
+                            <input type="text" name="search" placeholder="Search by name or code..." 
+                                class="w-full bg-[#1F2937] border border-slate-700 rounded-xl py-3.5 pl-12 pr-4 focus:border-indigo-500 outline-none"
+                                hx-get="{% url 'search_products' %}" hx-trigger="keyup changed delay:300ms" hx-target="#product-results" />
+                        </div>
+                    </div>
+
+                    <div id="product-results" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {% include 'sales/product_list_results.html' %}
+                    </div>
+
+                    <div class="glass-card p-6">
+                        <div class="flex justify-between items-center mb-4 border-b border-slate-800 pb-3">
+                            <h4 class="font-bold text-indigo-400"><i class="fas fa-shopping-basket mr-2"></i> Current Order</h4>
+                            <button onclick="clearCart()" class="text-rose-500 text-xs hover:underline">Remove All</button>
+                        </div>
+                        <div id="cart-container" class="space-y-3 max-h-[300px] overflow-y-auto custom-scrollbar pr-2">
+                            <p class="text-slate-600 text-center py-6 italic text-sm">No items selected yet.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-span-12 lg:col-span-5 space-y-6">
+                    <div class="glass-card p-6">
+                        <h4 class="font-bold mb-4 text-xs text-slate-500 uppercase tracking-widest">Customer Information</h4>
+                        <div class="space-y-3">
+                            <input type="text" id="cust-name" placeholder="Customer Name" class="input-dark">
+                            <input type="text" id="cust-phone" placeholder="Phone Number" class="input-dark">
+                            <input type="text" id="cust-location" placeholder="Address/Location" class="input-dark">
+                        </div>
+                    </div>
+
+                    <div class="glass-card p-6">
+                        <h4 class="font-bold mb-4 text-xs text-slate-500 uppercase tracking-widest">Select Payment</h4>
+                        <input type="hidden" id="selected-payment" value="Cash">
+                        <div class="grid grid-cols-3 gap-3">
+                            <div onclick="selectPayment('Bkash', this)" class="payment-btn p-3 rounded-xl border border-slate-800 flex flex-col items-center">
+                                <i class="fas fa-mobile-alt text-pink-500 mb-1"></i> <span class="text-[10px]">Bkash</span>
+                            </div>
+                            <div onclick="selectPayment('Nagad', this)" class="payment-btn p-3 rounded-xl border border-slate-800 flex flex-col items-center">
+                                <i class="fas fa-wallet text-orange-500 mb-1"></i> <span class="text-[10px]">Nagad</span>
+                            </div>
+                            <div onclick="selectPayment('Cash', this)" class="payment-btn payment-active p-3 rounded-xl border-indigo-500 bg-indigo-500/10 flex flex-col items-center">
+                                <i class="fas fa-money-bill-wave text-emerald-500 mb-1"></i> <span class="text-[10px] font-bold">Cash</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="glass-card p-6 bg-indigo-900/10 border-indigo-500/20">
+                        <div class="space-y-3">
+                            <div class="flex justify-between text-sm text-slate-400">
+                                <span>Subtotal</span><span id="subtotal" class="text-white font-bold">৳0</span>
+                            </div>
+                            <div class="flex justify-between items-center text-sm text-slate-400">
+                                <span>Discount (%)</span>
+                                <input type="number" id="discount-input" value="0" oninput="updateTotals()" class="w-16 bg-[#1f2937] border border-slate-700 rounded px-2 py-1 text-center text-white">
+                            </div>
+                            <div class="flex justify-between items-center text-sm text-slate-400">
+                                <span>VAT (%)</span>
+                                <input type="number" id="vat-input" value="5" oninput="updateTotals()" class="w-16 bg-[#1f2937] border border-slate-700 rounded px-2 py-1 text-center text-white">
+                            </div>
+                            <div class="border-t border-slate-800 pt-3 flex justify-between items-end">
+                                <span class="text-lg font-bold">Total Amount</span>
+                                <span id="grand-total" class="text-2xl font-black text-indigo-400">৳0</span>
+                            </div>
+                            <button id="submit-btn" onclick="submitSale()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl mt-4 transition active:scale-95 flex items-center justify-center gap-2">
+                                <i class="fas fa-print"></i> COMPLETE & PRINT
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        document.getElementById('date-display').innerText = new Date().toDateString();
+        let cart = [];
+
+        function addToCart(id, name, price) {
+            const existing = cart.find(item => item.id === id);
+            if (existing) { existing.qty += 1; } 
+            else { cart.push({ id, name, price: parseFloat(price), qty: 1 }); }
+            renderCart();
+        }
+
+        function updateQty(id, delta) {
+            const item = cart.find(item => item.id === id);
+            if (item) {
+                item.qty += delta;
+                if (item.qty <= 0) cart = cart.filter(i => i.id !== id);
+                renderCart();
+            }
+        }
+
+        function clearCart() { cart = []; renderCart(); }
+
+        function selectPayment(method, el) {
+            document.getElementById('selected-payment').value = method;
+            document.querySelectorAll('.payment-btn').forEach(b => b.classList.remove('payment-active', 'border-indigo-500', 'bg-indigo-500/10'));
+            el.classList.add('payment-active', 'border-indigo-500', 'bg-indigo-500/10');
+        }
+
+        function renderCart() {
+            const container = document.getElementById('cart-container');
+            container.innerHTML = '';
+            if (cart.length === 0) {
+                container.innerHTML = '<p class="text-slate-600 text-center py-6 italic text-sm">No items selected yet.</p>';
+            } else {
+                cart.forEach(item => {
+                    container.innerHTML += `
+                        <div class="flex justify-between items-center bg-[#1f2937] p-3 rounded-xl border border-slate-700">
+                            <div class="flex-1">
+                                <h5 class="text-sm font-bold truncate w-48">${item.name}</h5>
+                                <p class="text-xs text-indigo-400">৳${item.price} x ${item.qty}</p>
+                            </div>
+                            <div class="flex items-center gap-4">
+                                <div class="flex items-center bg-slate-800 rounded-lg border border-slate-700 h-8">
+                                    <button onclick="updateQty(${item.id}, -1)" class="px-3 hover:bg-slate-700">-</button>
+                                    <span class="text-xs font-bold w-6 text-center">${item.qty}</span>
+                                    <button onclick="updateQty(${item.id}, 1)" class="px-3 hover:bg-slate-700">+</button>
+                                </div>
+                                <span class="font-bold text-sm min-w-[60px] text-right">৳${(item.price * item.qty).toFixed(0)}</span>
+                            </div>
+                        </div>`;
+                });
+            }
+            updateTotals();
+        }
+
+        function updateTotals() {
+            let subtotal = cart.reduce((s, i) => s + (i.price * i.qty), 0);
+            let disc = parseFloat(document.getElementById('discount-input').value) || 0;
+            let vat = parseFloat(document.getElementById('vat-input').value) || 0;
+            let afterDisc = subtotal - (subtotal * disc / 100);
+            let final = afterDisc + (afterDisc * vat / 100);
+            document.getElementById('subtotal').innerText = `৳${subtotal.toFixed(0)}`;
+            document.getElementById('grand-total').innerText = `৳${final.toFixed(0)}`;
+            return final;
+        }
+
+        // 🔹 UPDATED SUBMIT FUNCTION (Fixed UI/Redirect)
+        function submitSale() {
+            if (cart.length === 0) return alert("Cart is empty!");
+            
+            const submitBtn = document.getElementById('submit-btn');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+
+            let finalTotal = updateTotals();
+            
+            let formData = new FormData();
+            formData.append('customer_name', document.getElementById('cust-name').value);
+            formData.append('customer_phone', document.getElementById('cust-phone').value);
+            formData.append('customer_location', document.getElementById('cust-location').value);
+            formData.append('payment_method', document.getElementById('selected-payment').value);
+            formData.append('total_price', finalTotal);
+            formData.append('items', JSON.stringify(cart));
+            formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+            fetch("{% url 'complete_sale' %}", {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Redirect to Invoice Page
+                    window.location.href = `/sales/invoice/${data.sale_id}/`;
+                } else {
+                    alert("Error: " + data.message);
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="fas fa-print"></i> COMPLETE & PRINT';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert("Something went wrong!");
+                submitBtn.disabled = false;
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Reports & Analytics | InventoryPro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #0B1120; color: #F8FAFC; font-family: 'Inter', sans-serif; }
+        .glass-card { background: #111827; border: 1px solid #1F2937; border-radius: 1.25rem; }
+        .tab-btn { padding: 0.5rem 1rem; border-radius: 0.6rem; font-size: 0.75rem; transition: 0.3s; color: #94A3B8; white-space: nowrap; }
+        .tab-btn.active { background: #6366F1; color: white; shadow: 0 4px 14px 0 rgba(99, 102, 241, 0.39); }
+        .custom-scrollbar::-webkit-scrollbar { height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #1F2937; border-radius: 10px; }
+    </style>
+</head>
+<body class="flex flex-col lg:flex-row h-screen overflow-hidden">
+
+    <aside class="w-72 bg-[#0F172A] border-r border-slate-800 p-6 hidden lg:flex flex-col shrink-0">
+        <div class="flex items-center gap-3 mb-10 px-2">
+            <div class="bg-indigo-600 w-10 h-10 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                <i class="fas fa-boxes-stacked text-white text-xl"></i>
+            </div>
+            <h1 class="text-xl font-black text-white italic tracking-tight">Inventory<span class="text-indigo-500">Pro</span></h1>
+        </div>
+        <div class="flex-1 custom-scrollbar overflow-y-auto">
+            {% include 'sidebar.html' %}
+        </div>
+    </aside>
+
+    <main class="flex-1 overflow-y-auto h-full p-4 md:p-8 lg:p-10">
+        
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+            <div>
+                <h2 class="text-xl md:text-2xl font-black tracking-tight uppercase">Reports & Analytics</h2>
+                <p class="text-slate-500 text-xs md:text-sm">Detailed sales insights across all branches</p>
+            </div>
+            <button class="w-full md:w-auto bg-slate-800 hover:bg-slate-700 border border-slate-700 px-4 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition">
+                <i class="fas fa-download"></i> Export CSV
+            </button>
+        </div>
+
+        <div class="glass-card p-4 md:p-6 mb-8 bg-[#0F172A]/50">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:flex items-end gap-4">
+                <div class="space-y-1.5 flex-1">
+                    <label class="text-[10px] uppercase font-black text-slate-500 tracking-widest px-1">From Date</label>
+                    <input type="date" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-sm text-white outline-none focus:border-indigo-500">
+                </div>
+                <div class="space-y-1.5 flex-1">
+                    <label class="text-[10px] uppercase font-black text-slate-500 tracking-widest px-1">To Date</label>
+                    <input type="date" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-sm text-white outline-none focus:border-indigo-500">
+                </div>
+                <button class="w-full lg:w-auto bg-indigo-600 hover:bg-indigo-700 px-6 py-2.5 rounded-xl text-sm font-black transition shadow-lg shadow-indigo-500/20">
+                    Apply Filter
+                </button>
+            </div>
+        </div>
+
+        <div class="flex gap-1 mb-8 bg-slate-900/50 p-1 w-full sm:w-fit rounded-xl overflow-x-auto custom-scrollbar border border-slate-800">
+            <a href="?view=daily" class="tab-btn {% if view_type == 'daily' %}active{% endif %}">Daily</a>
+            <a href="?view=monthly" class="tab-btn {% if view_type == 'monthly' %}active{% endif %}">Monthly</a>
+            <a href="?view=branch-wise" class="tab-btn {% if view_type == 'branch-wise' %}active{% endif %}">Branch-wise</a>
+            <a href="?view=product-wise" class="tab-btn {% if view_type == 'product-wise' %}active{% endif %}">Product-wise</a>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-10">
+            <div class="glass-card p-5 md:p-6 hover:border-indigo-500/50 transition">
+                <div class="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-400 mb-4"><i class="fas fa-dollar-sign"></i></div>
+                <p class="text-slate-500 text-[10px] uppercase font-black tracking-widest">Total Revenue</p>
+                <h3 class="text-xl md:text-2xl font-black mt-1">৳{{ stats.total_revenue|floatformat:2|default:0 }}</h3>
+            </div>
+            <div class="glass-card p-5 md:p-6 hover:border-emerald-500/50 transition">
+                <div class="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 mb-4"><i class="fas fa-shopping-bag"></i></div>
+                <p class="text-slate-500 text-[10px] uppercase font-black tracking-widest">Transactions</p>
+                <h3 class="text-xl md:text-2xl font-black mt-1">{{ stats.total_transactions|default:0 }}</h3>
+            </div>
+            <div class="glass-card p-5 md:p-6 hover:border-orange-500/50 transition">
+                <div class="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-400 mb-4"><i class="fas fa-chart-line"></i></div>
+                <p class="text-slate-500 text-[10px] uppercase font-black tracking-widest">Avg. Order</p>
+                <h3 class="text-xl md:text-2xl font-black mt-1">৳{{ stats.avg_order_value|floatformat:2|default:0 }}</h3>
+            </div>
+            <div class="glass-card p-5 md:p-6 hover:border-rose-500/50 transition">
+                <div class="w-10 h-10 rounded-xl bg-rose-500/10 flex items-center justify-center text-rose-400 mb-4"><i class="fas fa-undo"></i></div>
+                <p class="text-slate-500 text-[10px] uppercase font-black tracking-widest">Return Rate</p>
+                <h3 class="text-xl md:text-2xl font-black mt-1">1.8%</h3>
+            </div>
+        </div>
+
+        <div class="glass-card overflow-hidden">
+            <div class="overflow-x-auto custom-scrollbar">
+                <table class="w-full text-left min-w-[600px]">
+                    <thead class="bg-slate-800/30 text-slate-500 text-[10px] uppercase tracking-widest border-b border-slate-800">
+                        <tr>
+                            <th class="px-6 py-4 font-black">
+                                {% if view_type == 'product-wise' %}Product Item
+                                {% elif view_type == 'branch-wise' %}Branch Name
+                                {% else %}Period / Date{% endif %}
+                            </th>
+                            <th class="px-6 py-4 font-black">
+                                {% if view_type == 'product-wise' %}Category
+                                {% elif view_type == 'branch-wise' %}Location
+                                {% else %}Branch Name{% endif %}
+                            </th>
+                            <th class="px-6 py-4 font-black">Revenue</th>
+                            <th class="px-6 py-4 font-black">{% if view_type == 'product-wise' %}Total Qty{% else %}Sales Count{% endif %}</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-xs md:text-sm divide-y divide-slate-800/50">
+                        {% for row in report_data %}
+                        <tr class="hover:bg-slate-800/20 transition">
+                            <td class="px-6 py-4 font-bold text-white">
+                                {% if view_type == 'product-wise' %}{{ row.product__name }}
+                                {% elif view_type == 'branch-wise' %}{{ row.branch__name }}
+                                {% else %}{{ row.period|date:"d M, Y" }}{% endif %}
+                            </td>
+                            <td class="px-6 py-4 text-slate-400">
+                                {% if view_type == 'product-wise' %}{{ row.product__category__name }}
+                                {% elif view_type == 'branch-wise' %}{{ row.branch__location|default:"-" }}
+                                {% else %}{{ row.branch__name }}{% endif %}
+                            </td>
+                            <td class="px-6 py-4 font-black text-indigo-400">৳{{ row.revenue|floatformat:2 }}</td>
+                            <td class="px-6 py-4 font-medium text-slate-300">{{ row.count }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="px-6 py-12 text-center text-slate-500 italic">
+                                <i class="fas fa-folder-open block text-2xl mb-2"></i> No records found.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+</body>
+</html>

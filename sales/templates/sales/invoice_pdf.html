@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<html>
+<head>
+    <style>
+        @page { size: a5; margin: 1cm; }
+        body { font-family: sans-serif; color: #333; }
+        .header { text-align: center; border-bottom: 2px solid #444; padding-bottom: 10px; }
+        .invoice-info { margin-top: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th { background: #f2f2f2; text-align: left; padding: 5px; }
+        td { padding: 5px; border-bottom: 1px solid #eee; }
+        .total-section { text-align: right; margin-top: 20px; font-weight: bold; }
+        .footer { text-align: center; font-size: 10px; margin-top: 50px; color: #888; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Clothing Brand</h1>
+        <p>{{ branch.name }} Branch - {{ branch.location }}</p>
+    </div>
+
+    <div class="invoice-info">
+        <p><strong>Invoice:</strong> {{ sale.invoice_no }}</p>
+        <p><strong>Date:</strong> {{ sale.created_at|date:"d M, Y" }}</p>
+        <p><strong>Payment:</strong> {{ sale.payment_method }}</p>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Item</th>
+                <th>Qty</th>
+                <th>Price</th>
+                <th>Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td>{{ item.product.name }}</td>
+                <td>{{ item.quantity }}</td>
+                <td>{{ item.price }}</td>
+                <td>{{ item.price|add:item.quantity }}</td> </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="total-section">
+        <p>Subtotal: ৳{{ sale.sub_total }}</p>
+        <p>Discount: {{ sale.discount_percent }}%</p>
+        <hr>
+        <h2 style="color: #6366F1;">Total: ৳{{ sale.final_total }}</h2>
+    </div>
+
+    <div class="footer">
+        <p>Thank you for shopping with us!</p>
+        <p>Software Powered by InventoryPro</p>
+    </div>
+</body>
+</html>
+{% endblock %}

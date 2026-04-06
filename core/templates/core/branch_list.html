@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2 class="text-xl mb-4">Branches</h2>
+
+<ul>
+{% for b in branches %}
+<li class="bg-white p-3 mb-2 shadow">
+    {{ b.name }} - {{ b.location }}
+</li>
+{% endfor %}
+</ul>
+
+{% endblock %}
